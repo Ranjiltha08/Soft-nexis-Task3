@@ -1,0 +1,258 @@
+{
+  "info": {
+    "name": "TaskFlow API",
+    "description": "Complete test suite for TaskFlow API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "taskId",  "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET all tasks (empty)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tasks"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Is JSON', () => pm.response.to.be.json);",
+          "pm.test('Has tasks array', () => pm.expect(pm.response.json().tasks).to.be.an('array'));",
+          "pm.test('Has count', () => pm.expect(pm.response.json()).to.have.property('count'));"
+        ]}
+      }]
+    },
+    {
+      "name": "POST create task (valid)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/tasks",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"text\": \"Learn Node.js\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 201', () => pm.response.to.have.status(201));",
+          "const json = pm.response.json();",
+          "pm.test('Has id', () => pm.expect(json).to.have.property('id'));",
+          "pm.test('Text matches', () => pm.expect(json.text).to.eql('Learn Node.js'));",
+          "pm.test('Completed false', () => pm.expect(json.completed).to.be.false);",
+          "pm.collectionVariables.set('taskId', json.id);"
+        ]}
+      }]
+    },
+    {
+      "name": "POST create task (empty text - 400)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/tasks",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"text\": \"\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 400', () => pm.response.to.have.status(400));",
+          "pm.test('Has error', () => pm.expect(pm.response.json()).to.have.property('error'));"
+        ]}
+      }]
+    },
+    {
+      "name": "POST create task (no body - 400)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/tasks",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 400', () => pm.response.to.have.status(400));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET task by id",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tasks/{{taskId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Correct id', () => pm.expect(pm.response.json().id).to.eql(parseInt(pm.collectionVariables.get('taskId'))));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET task not found (404)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tasks/99999"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 404', () => pm.response.to.have.status(404));",
+          "pm.test('Has error', () => pm.expect(pm.response.json()).to.have.property('error'));"
+        ]}
+      }]
+    },
+    {
+      "name": "PUT update task text",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/tasks/{{taskId}}",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"text\": \"Learn Node.js & Express\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Text updated', () => pm.expect(pm.response.json().text).to.eql('Learn Node.js & Express'));",
+          "pm.test('Has updatedAt', () => pm.expect(pm.response.json()).to.have.property('updatedAt'));"
+        ]}
+      }]
+    },
+    {
+      "name": "PUT toggle completed",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/tasks/{{taskId}}",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"completed\": true}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Completed true', () => pm.expect(pm.response.json().completed).to.be.true);"
+        ]}
+      }]
+    },
+    {
+      "name": "PUT not found (404)",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/tasks/99999",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"text\": \"Ghost task\"}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 404', () => pm.response.to.have.status(404));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET filter completed=true",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks?completed=true",
+          "query": [{ "key": "completed", "value": "true" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('All completed', () => {",
+          "  pm.response.json().tasks.forEach(t => pm.expect(t.completed).to.be.true);",
+          "});"
+        ]}
+      }]
+    },
+    {
+      "name": "GET search tasks",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks?search=node",
+          "query": [{ "key": "search", "value": "node" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));"
+        ]}
+      }]
+    },
+    {
+      "name": "DELETE task by id",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/tasks/{{taskId}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 204', () => pm.response.to.have.status(204));"
+        ]}
+      }]
+    },
+    {
+      "name": "DELETE not found (404)",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/tasks/99999"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 404', () => pm.response.to.have.status(404));"
+        ]}
+      }]
+    },
+    {
+      "name": "DELETE clear completed",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/tasks"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 200', () => pm.response.to.have.status(200));",
+          "pm.test('Has message', () => pm.expect(pm.response.json()).to.have.property('message'));"
+        ]}
+      }]
+    },
+    {
+      "name": "GET 404 unknown route",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/unknown"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Status 404', () => pm.response.to.have.status(404));"
+        ]}
+      }]
+    }
+  ]
+}
